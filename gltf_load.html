@@ -1,0 +1,181 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <script src="https://unpkg.com/three@0.147/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.147/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.147/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://unpkg.com/three@0.147/examples/js/loaders/KTXLoader.js"></script>
+
+    <script src="https://unpkg.com/three@0.147/examples/js/libs/meshopt_decoder.js"></script>
+
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+    <script>
+        //import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+
+        // import "https://unpkg.com/three@0.147/build/three.min.js";
+        // import { GLTFLoader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/GLTFLoader.js';
+        // import { KTX2Loader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/KTX2Loader.js';
+        // import { DRACOLoader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/DRACOLoader.js';
+
+
+        // ページの読み込みを待つ
+        window.addEventListener('DOMContentLoaded', init);
+
+        function init() {
+            // レンダラーを作成
+            const renderer = new THREE.WebGLRenderer({
+                canvas: document.querySelector('#myCanvas'),
+                antialias: true,
+            });
+
+            // シーンを作成
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x404040);
+
+
+            // カメラを作成
+            const camera = new THREE.PerspectiveCamera(45, 1.0);
+            camera.position.set(0, 0, +1000);
+
+            // 球体を作成
+            const geometry = new THREE.SphereGeometry(300, 30, 30);
+            // マテリアルを作成
+            const material = new THREE.MeshBasicMaterial({ wireframe: true });
+            // メッシュを作成
+            const mesh = new THREE.Mesh(geometry, material);
+            // 3D空間にメッシュを追加
+            scene.add(mesh);
+
+            const clock = new THREE.Clock();
+            let mixer;
+
+
+
+            const MANAGER = new THREE.LoadingManager();
+            const THREE_PATH = `https://unpkg.com/three@0.147.x`
+
+            const DRACO_LOADER = new THREE.DRACOLoader( MANAGER ).setDecoderPath( `${THREE_PATH}/examples/js/libs/draco/gltf/` );
+            // const KTX_LOADER = new THREE.KTXLoader( MANAGER ).setTranscoderPath( `${THREE_PATH}/examples/js/libs/basis/` );
+         
+
+            // // Intercept and override relative URLs.
+            // MANAGER.setURLModifier((url, path) => {
+
+            //     // URIs in a glTF file may be escaped, or not. Assume that assetMap is
+            //     // from an un-escaped source, and decode all URIs before lookups.
+            //     // See: https://github.com/donmccurdy/three-gltf-viewer/issues/146
+            //     const normalizedURL = rootPath + decodeURI(url)
+            //         .replace(baseURL, '')
+            //         .replace(/^(\.?\/)/, '');
+
+                
+
+            //     if (assetMap.has(normalizedURL)) {
+            //         const blob = assetMap.get(normalizedURL);
+            //         const blobURL = URL.createObjectURL(blob);
+            //         blobURLs.push(blobURL);
+            //         return blobURL;
+            //     }
+
+            //     return (path || '') + url;
+
+            // });
+
+
+            const loader = new THREE.GLTFLoader( )
+                .setCrossOrigin('anonymous')
+                .setDRACOLoader( DRACO_LOADER )
+                // .setKTXLoader( KTX_LOADER.detectSupport( this.renderer ) )
+                .setMeshoptDecoder( MeshoptDecoder );
+
+
+            loader.load(
+                "./assets/miyako.glb",
+                function (gltf) {
+                    const model = gltf.scene;
+                    const clip = gltf.animations;
+
+                    // setContent(scene, clip);
+
+
+                    // model.traverse(async (node) => {
+                    //     if (node.isLight) {
+                    //         this.state.punctualLights = false;
+                    //     } else if (node.isMesh) {
+                    //         // TODO(https://github.com/mrdoob/three.js/pull/18235): Clean up.
+                    //         node.material.depthWrite = !node.material.transparent;
+                    //     }
+                    // });
+
+                    scene.add(model);
+                    this.mixer = new THREE.AnimationMixer(model)
+                    action = this.mixer.clipAction(clip[0]);
+                    action.enabled = true;
+                    action.setLoop(THREE.LoopRepeat);
+                    action.setEffectiveTimeScale(1);
+                    action.setEffectiveWeight(1);
+                    action.play()
+
+                },
+                // called while loading is progressing
+                function (xhr) {
+                    console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+                },
+                // called when loading has error
+                function (error) {
+                    console.log('An error happened');
+                    console.log(error);
+                }
+            );
+
+
+
+            tick();
+
+            // 毎フレーム時に実行されるループイベントです
+            function tick() {
+                // レンダリング
+
+                if (this.mixer) {
+                    let mixerUpdateDelta = clock.getDelta();
+                    this.mixer.update(mixerUpdateDelta);
+                }
+                renderer.render(scene, camera);
+                requestAnimationFrame(tick);
+            }
+
+            // 初期化のために実行
+            onResize();
+            // リサイズイベント発生時に実行
+            window.addEventListener('resize', onResize);
+
+            function onResize() {
+                // サイズを取得
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+
+                // レンダラーのサイズを調整する
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(width, height);
+
+                // カメラのアスペクト比を正す
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <canvas id="myCanvas"></canvas>
+</body>
+
+</html>

@@ -1,4 +1,5 @@
 <script src='https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js'></script>
+<script src="./threeWorldComponent.js"></script>
 
 <style>
   .arjs-loader {
@@ -20,8 +21,8 @@
     color: white;
   }
 </style>
-
 <script src='./build/aframe-ar-nft.js'></script>
+
 <body style='margin : 0px; overflow: hidden;'>
    <!-- minimal loader shown until image descriptors are loaded -->
   <div class="arjs-loader">
@@ -32,16 +33,54 @@
         renderer="logarithmicDepthBuffer: true; precision: medium;"
         embedded arjs='trackingMethod: best; sourceType: webcam; debugUIEnabled: false;'>
 
+
+        <a-assets>
+          <a-asset-item id="tree" src="./object/Miyako.glb"></a-asset-item>
+        </a-assets>
+      
+
         <!-- use rawgithack to retrieve the correct url for nft marker (see 'pinball' below) -->
+                    <!-- type='nft' url='./logo/logo-image/logo_konel' -->
+                    <!-- type='nft' url='./trex/trex-image/trex' -->
+
         <a-nft
             type='nft' url='./logo/logo-image/logo_konel'
+            three-scene
             smooth='true' smoothCount='10' smoothTolerance='0.01' smoothThreshold='5'>
+
+            <a-entity gltf-model="./trex/tree.glb"
+            position="200 0 -150"
+            scale="10 10 10"
+            ></a-entity>
+            
+            <a-entity three-world
+            position="200 0 -150"
+            scale="10 10 10"
+            ></a-entity>
+
+            <!-- <a-entry>
+              <a-box scale="100 100 100" 
+              position="200 0 -150"
+              ></a-box>
+            </a-entry> -->
+
+            <a-entity>
             <a-entity
                 gltf-model='./trex/scene.gltf'
                 scale="5 5 5"
-                position="150 300 -100"
+                position="200 0 -150"
                 >
             </a-entity>
+            <!-- <a-box scale="100 100 100" 
+            position="200 0 -150"
+            ></a-box> -->
+            
+            <a-entity three-world
+            position="200 0 -150"
+            scale="10 10 10"
+            ></a-entity>
+          </a-entity>
+
         </a-nft>
 		<a-entity camera></a-entity>
     </a-scene>
