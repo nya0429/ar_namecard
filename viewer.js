@@ -21,14 +21,14 @@ import {
   LinearToneMapping,
   ACESFilmicToneMapping
 } from 'three';
-import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
-import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
-import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import Stats from 'https://unpkg.com/three@0.147/examples/jsm/libs/stats.module.js';
+import { GLTFLoader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/GLTFLoader.js';
+import { KTX2Loader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/KTX2Loader.js';
+import { DRACOLoader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'https://unpkg.com/three@0.147/examples/jsm/libs/meshopt_decoder.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.147/examples/jsm/controls/OrbitControls.js';
+import { EXRLoader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/EXRLoader.js';
+import { RoomEnvironment } from 'https://unpkg.com/three@0.147/examples/jsm/environments/RoomEnvironment.js';
 
 import { GUI } from 'dat.gui';
 

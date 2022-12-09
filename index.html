@@ -1,87 +1,371 @@
-<script src='https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js'></script>
-<script src="./threeWorldComponent.js"></script>
+<!DOCTYPE html>
+<html lang="en">
 
-<style>
-  .arjs-loader {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+<head>
+  <title>three.js webgl - animation - skinning</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <script src="https://unpkg.com/three@0.147/build/three.min.js"></script>
+  <script src="./build/ar-threex.js"></script>
+  <script>THREEx.ArToolkitContext.baseURL = '../'</script>
 
-  .arjs-loader div {
-    text-align: center;
-    font-size: 1.25em;
-    color: white;
-  }
-</style>
-<script src='./build/aframe-ar-nft.js'></script>
+</head>
 
-<body style='margin : 0px; overflow: hidden;'>
-   <!-- minimal loader shown until image descriptors are loaded -->
-  <div class="arjs-loader">
-    <div>Loading, please wait...</div>
-  </div>
-    <a-scene
-        vr-mode-ui='enabled: false;'
-        renderer="logarithmicDepthBuffer: true; precision: medium;"
-        embedded arjs='trackingMethod: best; sourceType: webcam; debugUIEnabled: false;'>
+<body>
+  <div id="container"></div>
+
+  <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+			{
+				"imports": {
+					"three": "https://unpkg.com/three@0.147/build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
+  <script type="module">
+
+    import * as THREE from 'three';
+
+    import Stats from 'https://unpkg.com/three@0.147/examples/jsm/libs/stats.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.147/examples/jsm/loaders/GLTFLoader.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.147/examples/jsm/controls/OrbitControls.js';
+
+    // init renderer
+    let renderer = new THREE.WebGLRenderer({
+      // antialias	: true,
+      alpha: true
+    });
+    renderer.setClearColor(new THREE.Color('lightgrey'), 0)
+    // renderer.setPixelRatio( 2 );
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.domElement.style.position = 'absolute'
+    renderer.domElement.style.top = '0px'
+    renderer.domElement.style.left = '0px'
+    document.body.appendChild(renderer.domElement);
+
+    // array of functions for the rendering loop
+    let onRenderFcts = [];
+
+    // init scene and camera
+    let scene = new THREE.Scene();
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //		Initialize a basic camera
+    //////////////////////////////////////////////////////////////////////////////////
+
+    // Create a camera
+    let camera = new THREE.Camera();
+    scene.add(camera);
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //          handle arToolkitSource
+    ////////////////////////////////////////////////////////////////////////////////
+
+    let artoolkitProfile = new THREEx.ArToolkitProfile()
+    artoolkitProfile.sourceWebcam()
+    //artoolkitProfile.contextParameters.debug = true;
+    let arToolkitSource = new THREEx.ArToolkitSource(artoolkitProfile.sourceParameters)
+
+    arToolkitSource.init(function onReady() {
+      onResize()
+    })
+
+    // handle resize
+    window.addEventListener('resize', function () {
+      onResize()
+    })
+    function onResize() {
+      arToolkitSource.onResizeElement()
+      arToolkitSource.copyElementSizeTo(renderer.domElement)
+      if (arToolkitContext.arController !== null) {
+        arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
+      }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    //          initialize arToolkitContext
+    ////////////////////////////////////////////////////////////////////////////////
+
+    // set patternRatio
+    artoolkitProfile.contextParameters.patternRatio = 0.9
+
+    // create atToolkitContext
+    let arToolkitContext = new THREEx.ArToolkitContext(artoolkitProfile.contextParameters)
+    // initialize it
+    arToolkitContext.init(function onCompleted() {
+      // copy projection matrix to camera
+      camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+    })
+
+    // update artoolkit on every frame
+    onRenderFcts.push(function () {
+      if (arToolkitSource.ready === false) return
+
+      arToolkitContext.update(arToolkitSource.domElement)
+    })
 
 
-        <a-assets>
-          <a-asset-item id="tree" src="./object/Miyako.glb"></a-asset-item>
-        </a-assets>
+    ////////////////////////////////////////////////////////////////////////////////
+    //          Create a ArMarkerControls
+    ////////////////////////////////////////////////////////////////////////////////
+
+    let markerGroup = new THREE.Group
+    markerGroup.visible = false
+    scene.add(markerGroup)
+    let markerControls = new THREEx.ArMarkerControls(arToolkitContext, markerGroup, {
+      type: 'pattern',
+      // patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.hiro',
+      patternUrl: THREEx.ArToolkitContext.baseURL + '../data/pattern-files/pattern-arjs.patt',
+    })
+
+
+    // build a smoothedControls
+    let smoothedGroup = new THREE.Group()
+    scene.add(smoothedGroup)
+    let smoothedControls = new THREEx.ArSmoothedControls(smoothedGroup)
+    onRenderFcts.push(function (delta) {
+      smoothedControls.update(markerGroup)
+    })
+    markerGroup.visible = false
+
+    //////////////////////////////////////////////////////////////////////////////////
+    //		add an object in the scene
+    //////////////////////////////////////////////////////////////////////////////////
+
+
+    let markerScene = new THREE.Scene()
+    smoothedGroup.add(markerScene)
+
+    var mesh = new THREE.AxesHelper()
+    markerScene.add(mesh)
+
+    // add a torus knot
+    var geometry = new THREE.BoxGeometry(1, 1, 1);
+    var material = new THREE.MeshNormalMaterial({
+      transparent: true,
+      opacity: 0.5,
+      side: THREE.DoubleSide
+    });
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.position.y = geometry.parameters.height / 2
+    markerScene.add(mesh)
+
+    var geometry = new THREE.TorusKnotGeometry(0.3, 0.1, 64, 16);
+    var material = new THREE.MeshNormalMaterial();
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.position.y = 0.5
+    markerScene.add(mesh);
+
+    onRenderFcts.push(function (delta) {
+      mesh.rotation.y += delta * Math.PI
+    })
+
+
+
+    let clock = new THREE.Clock();
+
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
+    // create a global audio source
+    const sound = new THREE.Audio(listener);
+
+    // load a sound and set it as the Audio object's buffer
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load('assets/miyako_introduction.wav', function (buffer) {
+      sound.autoplay = false
+      sound.setBuffer(buffer);
+      sound.setLoop(false);
+      sound.setVolume(1.0);
+    });
+
+    let model, mixer;
+    let actions;
+    const loader = new GLTFLoader();
+    loader.load('assets/miyako_introduction.glb', function (gltf) {
+
+      const dirLight = new THREE.DirectionalLight(0xffffff);
+      dirLight.position.set(- 3, 10, 10);
+      dirLight.castShadow = true;
+      dirLight.shadow.camera.top = 2;
+      dirLight.shadow.camera.bottom = - 2;
+      dirLight.shadow.camera.left = - 2;
+      dirLight.shadow.camera.right = 2;
+      dirLight.shadow.camera.near = 0.1;
+      dirLight.shadow.camera.far = 40;
+      markerScene.add(dirLight);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
+      hemiLight.position.set(0, 20, 0);
+      markerScene.add(hemiLight);
+
+      model = gltf.scene;
+      markerScene.add(model);
+      model.rotateX(-Math.PI/2)
+      model.translateY(-1)
+      model.scale.set(0.01, 0.01, 0.01)
+      model.visible = true;
+
+      model.traverse(function (object) {
+        if (object.isMesh) {
+          object.castShadow = true;
+          object.material.depthWrite = !object.material.transparent;
+        }
+      });
+
+      const animations = gltf.animations;
+      console.log(animations.length)
+      console.log(animations)
+
+      mixer = new THREE.AnimationMixer(model);
+
+      function setWeight(action, weight) {
+
+        action.enabled = true;
+        action.setEffectiveTimeScale(1);
+        action.setEffectiveWeight(weight);
+
+      }
+
+      let idleAction = mixer.clipAction(animations[0]);
+      let speakAction = mixer.clipAction(animations[1]);
+      setWeight(idleAction, 1)
+      setWeight(speakAction, 0)
+      idleAction.setLoop(THREE.LoopPingPong)
+      speakAction.setLoop(THREE.LoopOnce)
+
+      actions = [idleAction, speakAction];
+      idleAction.play();
+      // actions.forEach(function (action) {
+      //   action.play();
+      // });
+
+      function unPauseAllActions() {
+        actions.forEach(function (action) {
+          action.paused = false;
+        });
+      }
+
+      mixer.addEventListener('finished',onFinished)
+      function onFinished(event) {
+          if (event.action === speakAction) {
+            speakAction.enabled = true;
+            speakAction.paused = true;
+            idleAction.paused = false;
+            setWeight(idleAction, 1);
+            idleAction.time = 0;
+            idleAction.crossFadeFrom(speakAction, 1, true);
+          }
+      }
       
+      // function synchronizeCrossFade(startAction, endAction, duration) {
+      //   mixer.addEventListener('loop', onLoopFinished);
+      //   function onLoopFinished(event) {
+      //     if (event.action === startAction) {
+      //       mixer.removeEventListener('loop', onLoopFinished);
+      //       executeCrossFade(startAction, endAction, duration);
 
-        <!-- use rawgithack to retrieve the correct url for nft marker (see 'pinball' below) -->
-                    <!-- type='nft' url='./logo/logo-image/logo_konel' -->
-                    <!-- type='nft' url='./trex/trex-image/trex' -->
+      //     }
+      //   }
+      // }
 
-        <a-nft
-            type='nft' url='./logo/logo-image/logo_konel'
-            three-scene
-            smooth='true' smoothCount='10' smoothTolerance='0.01' smoothThreshold='5'>
+      function prepareCrossFade(startAction, endAction, defaultDuration = 1) {
+        const duration = defaultDuration;
+        // singleStepMode = false;
+        unPauseAllActions();
+        executeCrossFade(startAction, endAction, duration);
 
-            <a-entity gltf-model="./trex/tree.glb"
-            position="200 0 -150"
-            scale="10 10 10"
-            ></a-entity>
-            
-            <a-entity three-world
-            position="200 0 -150"
-            scale="10 10 10"
-            ></a-entity>
+      }
 
-            <!-- <a-entry>
-              <a-box scale="100 100 100" 
-              position="200 0 -150"
-              ></a-box>
-            </a-entry> -->
+      function executeCrossFade(startAction, endAction, duration) {
 
-            <a-entity>
-            <a-entity
-                gltf-model='./trex/scene.gltf'
-                scale="5 5 5"
-                position="200 0 -150"
-                >
-            </a-entity>
-            <!-- <a-box scale="100 100 100" 
-            position="200 0 -150"
-            ></a-box> -->
-            
-            <a-entity three-world
-            position="200 0 -150"
-            scale="10 10 10"
-            ></a-entity>
-          </a-entity>
+        setWeight(endAction, 1);
+        endAction.time = 0;
+        startAction.crossFadeTo(endAction, duration, true);
 
-        </a-nft>
-		<a-entity camera></a-entity>
-    </a-scene>
+      }
+
+      function speakStart(duration){
+        speakAction.play()
+        sound.play();
+        unPauseAllActions();
+        setWeight(speakAction, 1);
+        speakAction.time = 0;
+        idleAction.crossFadeTo(speakAction, duration, true);
+      }
+
+
+      window.addEventListener('click', event => {
+
+
+        if(speakAction.paused){
+          speakStart(1)
+        }
+        // prepareCrossFade(idleAction, speakAction)
+        //idleAction.crossFadeTo(speakAction, 1, false)
+
+        //console.log(idleAction, speakAction)
+
+      });
+
+
+
+      onRenderFcts.push(function () {
+
+        //if smoothCOntrols
+
+        if (arToolkitSource.ready === false) {
+          return
+        }
+
+
+        //console.log(actions[0].weight, actions[1].weight)
+        //console.log(actions[0].enabled, actions[1].enabled)
+
+
+        // if (sound.isPlaying === false) {
+        //   if (markerGroup.visible === true) {
+        //     //sound.play();
+        //     //actions[1].time = 0;
+        //     //actions[1].play();
+        //     //actions[0].crossFadeTo(actions[1], 1, true)
+        //     //actions[0].crossFadeFrom(actions[1],20,true)
+        //   }
+        // }
+
+      })
+
+
+
+      onRenderFcts.push(function (delta) {
+        mixer.update(delta);
+        //console.log(actions[0].weight, actions[1].weight)
+
+
+      })
+
+      //////////////////////////////////////////////////////////////////////////////////
+      //		render the whole thing on the page
+      //////////////////////////////////////////////////////////////////////////////////
+      // render the scene
+      onRenderFcts.push(function () {
+        renderer.render(scene, camera);
+      })
+
+      requestAnimationFrame(function animate() {
+        // keep looping
+        requestAnimationFrame(animate);
+        let updateDelta = clock.getDelta();
+        onRenderFcts.forEach(function (onRenderFct) {
+          onRenderFct(updateDelta)
+        })
+
+      })
+
+    });
+
+  </script>
 </body>
