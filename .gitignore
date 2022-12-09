@@ -2,3 +2,4 @@ trex/
 .vscode/
 data/*
 !data/data/
+!data/pattern-files/
