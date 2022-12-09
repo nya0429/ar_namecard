@@ -312,18 +312,21 @@
 
       function speakevent(duration){
 
-        if(speakAction.paused){
+
+        // if(!speakAction.isRunning){
           speakStart(duration)
-        }
+        // }
 
       }
 
 
       window.addEventListener('click', event => {
+        console.log("click")
         speakevent(1)
       });
 
       window.addEventListener('touchend', event => {
+        console.log("touch")
         speakevent(1)
       });
 
