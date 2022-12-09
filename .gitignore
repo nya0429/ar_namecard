@@ -1,3 +1,4 @@
 trex/
 .vscode/
-data/
+data/*
+!data/data/
