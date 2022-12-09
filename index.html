@@ -39,7 +39,7 @@
       alpha: true
     });
     renderer.setClearColor(new THREE.Color('lightgrey'), 0)
-    // renderer.setPixelRatio( 2 );
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.domElement.style.position = 'absolute'
     renderer.domElement.style.top = '0px'
@@ -70,7 +70,19 @@
     let arToolkitSource = new THREEx.ArToolkitSource(artoolkitProfile.sourceParameters)
 
     arToolkitSource.init(function onReady() {
-      onResize()
+      arToolkitSource.domElement.addEventListener('canplay', () => {
+				console.log(
+					'canplay',
+					'actual source dimensions',
+					arToolkitSource.domElement.videoWidth,
+					arToolkitSource.domElement.videoHeight
+				);
+			});
+
+      // onResize()
+      setTimeout(() => {
+				onResize()
+			}, 2000);
     })
 
     // handle resize
@@ -82,6 +94,7 @@
       arToolkitSource.copyElementSizeTo(renderer.domElement)
       if (arToolkitContext.arController !== null) {
         arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas)
+				//arToolkitSource.copyElementSizeTo(window.arToolkitContext.arController.canvas)
       }
     }
 
@@ -297,20 +310,22 @@
         idleAction.crossFadeTo(speakAction, duration, true);
       }
 
-
-      window.addEventListener('click', event => {
-
+      function speakevent(duration){
 
         if(speakAction.paused){
-          speakStart(1)
+          speakStart(duration)
         }
-        // prepareCrossFade(idleAction, speakAction)
-        //idleAction.crossFadeTo(speakAction, 1, false)
 
-        //console.log(idleAction, speakAction)
+      }
 
+
+      window.addEventListener('click', event => {
+        speakevent(1)
       });
 
+      window.addEventListener('touchend', event => {
+        speakevent(1)
+      });
 
 
       onRenderFcts.push(function () {
